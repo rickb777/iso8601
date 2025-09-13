@@ -114,12 +114,9 @@ func (t Time) MarshalJSON() ([]byte, error) {
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 // The time is expected to be in RFC 3339 format.
-func (t *Time) UnmarshalText(data []byte) error {
+func (t *Time) UnmarshalText(data []byte) (err error) {
 	// Fractional seconds are handled implicitly by Parse.
-	tt, err := Parse(data)
-	if err == nil {
-		*t = Of(tt)
-	}
+	*t, err = Parse(data)
 	return err
 }
 
@@ -135,7 +132,7 @@ func (t *Time) UnmarshalJSON(b []byte) error {
 		return ErrNotString
 	}
 	var err error
-	t.Time, err = Parse(b)
+	*t, err = Parse(b)
 	return err
 }
 
@@ -151,36 +148,30 @@ func null(b []byte) bool {
 	return true
 }
 
-// String renders the time in ISO-8601 format (using RFC3339Nano).
-func (t Time) String() string {
-	// time.RFC3339Nano is one of several permitted ISO-8601 formats.
-	return t.Format(RFC3339Nano)
-}
-
 // Unix returns the local Time corresponding to the given Unix time, sec seconds and nsec
 // nanoseconds since January 1, 1970 UTC. It is valid to pass nsec outside the range
 // [0, 999999999]. Not all sec values have a corresponding time value. One such value
 // is 1<<63-1 (the largest int64 value).
-//func Unix(sec int64, nsec int64) Time {
-//	return Of(time.Unix(sec, nsec))
-//}
+func Unix(sec int64, nsec int64) Time {
+	return Of(time.Unix(sec, nsec))
+}
 
 // UnixMicro returns the local Time corresponding to the given Unix time, usec
 // microseconds since January 1, 1970 UTC.
-//func UnixMicro(usec int64) Time {
-//	return Of(time.UnixMicro(usec))
-//}
+func UnixMicro(usec int64) Time {
+	return Of(time.UnixMicro(usec))
+}
 
 // UnixMilli returns the local Time corresponding to the given Unix time, msec milliseconds
 // since January 1, 1970 UTC.
-//func UnixMilli(msec int64) Time {
-//	return Of(time.UnixMilli(msec))
-//}
+func UnixMilli(msec int64) Time {
+	return Of(time.UnixMilli(msec))
+}
 
 // Add returns the time t+d.
-//func (t Time) Add(d time.Duration) Time {
-//	return Of(t.Time.Add(d))
-//}
+func (t Time) Add(d time.Duration) Time {
+	return Of(t.Time.Add(d))
+}
 
 // AddDate returns the time corresponding to adding the given number of years, months,
 // and days to t. For example, AddDate(-1, 2, 3) applied to January 1, 2011 returns March 4, 2010.
@@ -193,31 +184,31 @@ func (t Time) String() string {
 //
 // AddDate normalizes its result in the same way that Date does, so, for example, adding one
 // month to October 31 yields December 1, the normalized form for November 31.
-//func (t Time) AddDate(years int, months int, days int) Time {
-//	return Of(t.Time.AddDate(years, months, days))
-//}
+func (t Time) AddDate(years int, months int, days int) Time {
+	return Of(t.Time.AddDate(years, months, days))
+}
 
 // In returns a copy of t representing the same time instant, but with the copy's location
 // information set to loc for display purposes.
-//func (t Time) In(loc *time.Location) Time {
-//	return Of(t.Time.In(loc))
-//}
+func (t Time) In(loc *time.Location) Time {
+	return Of(t.Time.In(loc))
+}
 
 // Local returns t with the location set to local time.
-//func (t Time) Local() Time {
-//	return Of(t.Time.Local())
-//}
+func (t Time) Local() Time {
+	return Of(t.Time.Local())
+}
 
 // UTC returns t with the location set to UTC.
-//func (t Time) UTC() Time {
-//	return Of(t.Time.UTC())
-//}
+func (t Time) UTC() Time {
+	return Of(t.Time.UTC())
+}
 
 // ZoneBounds returns the bounds of the time zone in effect at time t. The zone begins at
 // start and the next zone begins at end. If the zone begins at the beginning of time,
 // start will be returned as a zero Time. If the zone goes on forever, end will be returned
 // as a zero Time. The Location of the returned times will be the same as t.
-//func (t Time) ZoneBounds() (start, end Time) {
-//	s, e := t.Time.ZoneBounds()
-//	return Of(s), Of(e)
-//}
+func (t Time) ZoneBounds() (start, end Time) {
+	s, e := t.Time.ZoneBounds()
+	return Of(s), Of(e)
+}

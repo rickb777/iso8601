@@ -110,7 +110,7 @@ func TestTime_Unmarshaling(t *testing.T) {
 		data := []byte(s.Format(time.RFC3339Nano))
 		n, err := Parse(data)
 		expect.Error(err).Not().ToHaveOccurred(t)
-		expect.Any(s).ToBe(t, n)
+		expect.Any(s).ToBe(t, n.Time)
 	})
 
 	t.Run("string", func(t *testing.T) {
@@ -180,7 +180,47 @@ func TestTime_Marshaling(t *testing.T) {
 }
 
 func TestTime_Decorators(t *testing.T) {
-	t9 := Date(2017, 4, 26, 11, 13, 4, 123456789, time.UTC)
+	ny, err := time.LoadLocation("America/New_York")
+	expect.Error(err).ToBeNil(t)
+
+	t9 := Date(2017, 4, 26, 11, 13, 4, 123456789, ny)
+
+	t.Run("Unix", func(t *testing.T) {
+		r := Unix(101, 987)
+		expect.Any(r.Time).ToBe(t, time.Unix(101, 987))
+	})
+
+	t.Run("UnixMicro", func(t *testing.T) {
+		r := UnixMicro(123456789)
+		expect.Any(r.Time).ToBe(t, time.UnixMicro(123456789))
+	})
+
+	t.Run("UnixMilli", func(t *testing.T) {
+		r := UnixMilli(123456789)
+		expect.Any(r.Time).ToBe(t, time.UnixMilli(123456789))
+	})
+
+	t.Run("Local", func(t *testing.T) {
+		r := t9.Local()
+		expect.Any(r.Time).ToBe(t, t9.Time.Local())
+	})
+
+	t.Run("UTC", func(t *testing.T) {
+		r := t9.UTC()
+		expect.Any(r.Time).ToBe(t, t9.Time.UTC())
+	})
+
+	t.Run("In", func(t *testing.T) {
+		r := t9.In(time.Local)
+		expect.Any(r.Time).ToBe(t, t9.Time.In(time.Local))
+	})
+
+	t.Run("ZoneBounds", func(t *testing.T) {
+		s, e := t9.ZoneBounds()
+		expStart, expEnd := t9.Time.ZoneBounds()
+		expect.Any(s.Time).ToBe(t, expStart)
+		expect.Any(e.Time).ToBe(t, expEnd)
+	})
 
 	t.Run("Truncate", func(t *testing.T) {
 		tr := t9.Truncate(time.Microsecond)
@@ -191,6 +231,17 @@ func TestTime_Decorators(t *testing.T) {
 		r := t9.Round(time.Microsecond)
 		expect.Any(r.Time).ToBe(t, t9.Time.Round(time.Microsecond))
 	})
+
+	t.Run("Add", func(t *testing.T) {
+		r := t9.Add(123 * time.Microsecond)
+		expect.Any(r.Time).ToBe(t, t9.Time.Add(123*time.Microsecond))
+	})
+
+	t.Run("AddDate", func(t *testing.T) {
+		r := t9.AddDate(1, 2, 3)
+		expect.Any(r.Time).ToBe(t, t9.Time.AddDate(1, 2, 3))
+	})
+
 }
 
 func BenchmarkCheckNull(b *testing.B) {

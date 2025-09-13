@@ -341,3 +341,34 @@ func BenchmarkParse(b *testing.B) {
 		}
 	}
 }
+
+func TestParseISOZone(t *testing.T) {
+	t.Run("ok", func(t *testing.T) {
+		expect.Any(ParseISOZone([]byte("Z"))).ToBe(t, time.UTC)
+		expect.Any(ParseISOZone([]byte("+00:00"))).ToBe(t, time.FixedZone("+00:00", 0))
+		expect.Any(ParseISOZone([]byte("+05:00"))).ToBe(t, time.FixedZone("+05:00", 5*3600)) // New York
+		expect.Any(ParseISOZone([]byte("+05:01:01"))).ToBe(t, time.FixedZone("+05:01:01", 5*3600+61))
+		expect.Any(ParseISOZone([]byte("-01:00"))).ToBe(t, time.FixedZone("-01:00", -3600))
+		expect.Any(ParseISOZone([]byte("\u221201:00"))).ToBe(t, time.FixedZone("\u221201:00", -3600))
+		expect.Any(ParseISOZone([]byte("+0100"))).ToBe(t, time.FixedZone("+0100", 3600))
+		expect.Any(ParseISOZone([]byte("-0100"))).ToBe(t, time.FixedZone("-0100", -3600))
+		expect.Any(ParseISOZone([]byte("+01"))).ToBe(t, time.FixedZone("+01", 3600))
+		expect.Any(ParseISOZone([]byte("-01"))).ToBe(t, time.FixedZone("-01", -3600))
+		expect.Any(ParseISOZone([]byte("+03"))).ToBe(t, time.FixedZone("+03", 3*3600))
+		expect.Any(ParseISOZone([]byte("-03"))).ToBe(t, time.FixedZone("-03", -3*3600))
+		expect.Any(ParseISOZone([]byte("+0030"))).ToBe(t, time.FixedZone("+0030", 1800))
+		expect.Any(ParseISOZone([]byte("-0030"))).ToBe(t, time.FixedZone("-0030", -1800))
+	})
+
+	t.Run("error", func(t *testing.T) {
+		expect.Error(ParseISOZone([]byte("+0"))).ToContain(t, "iso8601: Zone information is too short")
+		expect.Error(ParseISOZone([]byte("1"))).ToContain(t, "iso8601: Unexpected character `1`")
+		expect.Error(ParseISOZone([]byte("+12345678"))).ToContain(t, "iso8601: Zone information is too long")
+		expect.Error(ParseISOZone([]byte("0100"))).ToContain(t, "iso8601: Unexpected character `0`")
+		expect.Error(ParseISOZone([]byte("-0000"))).ToContain(t, "iso8601: Specified zone is invalid")
+		expect.Error(ParseISOZone([]byte("-0:10"))).ToContain(t, "iso8601: Unexpected character `:`")
+		expect.Error(ParseISOZone([]byte("-01:0"))).ToContain(t, "iso8601: Specified zone is invalid")
+		expect.Error(ParseISOZone([]byte("-foo"))).ToContain(t, "iso8601: Unexpected character `f`")
+		expect.Error(ParseISOZone([]byte{0xAA, 0xBB})).ToContain(t, "iso8601: Unexpected character `?`")
+	})
+}

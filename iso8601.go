@@ -3,11 +3,11 @@
 // especially ones written in other languages.
 //
 // Use the provided `Time` structure instead of the default `time.Time` to provide ISO8601 support for JSON responses.
-//
 package iso8601
 
 import (
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -22,88 +22,112 @@ const (
 
 const (
 	// charStart is the binary position of the character `0`
-	charStart uint = '0'
+	charStart int = '0'
 )
 
-// ParseISOZone parses the 5 character zone information in an ISO8061 date string.
-// This function expects input that matches:
+// ParseISOZone parses the zone information in an ISO8061 date string.
+// Most timezones use only hours and minutes; seconds are also supported but
+// not fractions of seconds.
 //
-//     -0100
-//     +0100
-//     +01:00
-//     -01:00
-//     +01
-//     +01:45
-//     +0145
+// The input is expected to match one of:
 //
+//	 Z
+//		+hh
+//		-hh
+//		+hh:mm
+//		-hh:mm
+//		+hh:mm:ss
+//		-hh:mm:ss
+//
+// The leading character can be plus + (u002B), hyphen - (u002D) or minus − (u2212).
+// Examples: Z, +03, -0100, +02:00, +01:45:30
 func ParseISOZone(inp []byte) (*time.Location, error) {
-	if len(inp) < 3 || len(inp) > 6 {
-		return nil, ErrZoneCharacters
-	}
 	var neg bool
-	switch inp[0] {
+
+	r, i := utf8.DecodeRune(inp)
+	switch r {
+	case 'Z':
+		return time.UTC, nil
 	case '+':
-	case '-':
+	case '-', '\u2212':
 		neg = true
 	default:
-		return nil, newUnexpectedCharacterError(inp[0])
+		if r == utf8.RuneError {
+			return nil, newUnexpectedCharacterError('?')
+		}
+		return nil, newUnexpectedCharacterError(r)
+	}
+
+	if len(inp) < 3 {
+		return nil, ErrZoneTooShort
 	}
 
 	var offset int
+	number := inp[i:]
 
-	var z uint
-	var multiplier = uint(3600) // start with initial multiplier of hours
-	for i := 1; i < len(inp); i++ {
-		if i == 3 { // next multiplier
-			offset = int(z * multiplier)
-			multiplier = 60 // multiplier for minutes
+	var z, digits int
+	var multiplier = 3600 // start with initial multiplier of hours
+	for i = 0; i < len(number); i++ {
+		if digits > 2 {
+			return nil, ErrZoneTooLong
+		} else if i == 2 || i == 5 { // next multiplier
+			offset += z * multiplier
+			multiplier /= 60 // multiplier for minutes or seconds
 			z = 0
+			digits = 0
 		} else { // next digit
 			z = z * 10
 		}
 
-		switch inp[i] {
+		switch number[i] {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			z += uint(inp[i]) - charStart
+			z += int(number[i]) - charStart
+			digits++
 		case ':':
-			if i != 3 {
-				return nil, newUnexpectedCharacterError(inp[i])
+			if i != 2 && i != 5 {
+				return nil, newUnexpectedCharacterError(rune(number[i]))
 			}
+			digits = 0
 		default:
-			return nil, newUnexpectedCharacterError(inp[i])
+			return nil, newUnexpectedCharacterError(rune(number[i]))
 		}
-
 	}
 
-	offset += int(z * multiplier)
+	offset += z * multiplier
+
+	if digits != 2 {
+		return nil, ErrInvalidZone
+	}
 
 	if neg {
 		offset = -offset
 	}
+
 	if neg && offset == 0 {
 		return nil, ErrInvalidZone
 	}
-	return time.FixedZone("", offset), nil
+
+	return time.FixedZone(string(inp), offset), nil
 }
 
 // Parse parses an ISO8601 compliant date-time byte slice into a time.Time object.
 // If any component of an input date-time is not within the expected range then an *iso8601.RangeError is returned.
-func Parse(inp []byte) (time.Time, error) {
+func Parse(inp []byte) (Time, error) {
 	var (
-		Y         uint
-		M         uint
-		d         uint
-		h         uint
-		m         uint
-		s         uint
+		Y         int
+		M         int
+		d         int
+		h         int
+		m         int
+		s         int
 		fraction  int
-		nfraction = 1 //counts amount of precision for the second fraction
+		nfraction = 1 // counts amount of precision for the second fraction
 	)
 
 	// Always assume UTC by default
 	var loc = time.UTC
 
-	var c uint
+	var c int
 	var p = year
 
 	var i int
@@ -113,7 +137,7 @@ parse:
 		switch inp[i] {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			c = c * 10
-			c += uint(inp[i]) - charStart
+			c += int(inp[i]) - charStart
 
 			if p == millisecond {
 				nfraction++
@@ -126,7 +150,7 @@ parse:
 				case month:
 					M = c
 				default:
-					return time.Time{}, newUnexpectedCharacterError(inp[i])
+					return Time{}, newUnexpectedCharacterError(rune(inp[i]))
 				}
 				p++
 				c = 0
@@ -142,20 +166,20 @@ parse:
 			case second:
 				s = c
 			case millisecond:
-				fraction = int(c)
+				fraction = c
 			default:
-				return time.Time{}, newUnexpectedCharacterError(inp[i])
+				return Time{}, newUnexpectedCharacterError(rune(inp[i]))
 			}
 			c = 0
 			var err error
 			loc, err = ParseISOZone(inp[i:])
 			if err != nil {
-				return time.Time{}, err
+				return Time{}, err
 			}
 			break parse
 		case 'T':
 			if p != day {
-				return time.Time{}, newUnexpectedCharacterError(inp[i])
+				return Time{}, newUnexpectedCharacterError(rune(inp[i]))
 			}
 			d = c
 			c = 0
@@ -169,13 +193,13 @@ parse:
 			case second:
 				m = c
 			default:
-				return time.Time{}, newUnexpectedCharacterError(inp[i])
+				return Time{}, newUnexpectedCharacterError(rune(inp[i]))
 			}
 			c = 0
 			p++
 		case '.':
 			if p != second {
-				return time.Time{}, newUnexpectedCharacterError(inp[i])
+				return Time{}, newUnexpectedCharacterError(rune(inp[i]))
 			}
 			s = c
 			c = 0
@@ -191,14 +215,14 @@ parse:
 			case millisecond:
 				fraction = int(c)
 			default:
-				return time.Time{}, newUnexpectedCharacterError(inp[i])
+				return Time{}, newUnexpectedCharacterError(rune(inp[i]))
 			}
 			c = 0
 			if len(inp) != i+1 {
-				return time.Time{}, ErrRemainingData
+				return Time{}, ErrRemainingData
 			}
 		default:
-			return time.Time{}, newUnexpectedCharacterError(inp[i])
+			return Time{}, newUnexpectedCharacterError(rune(inp[i]))
 		}
 	}
 
@@ -215,13 +239,13 @@ parse:
 		case second:
 			s = c
 		case millisecond:
-			fraction = int(c)
+			fraction = c
 		}
 	}
 
 	// Get the seconds fraction as nanoseconds
 	if fraction < 0 || 1e9 <= fraction {
-		return time.Time{}, ErrPrecision
+		return Time{}, ErrPrecision
 	}
 	scale := 10 - nfraction
 	for i := 0; i < scale; i++ {
@@ -230,51 +254,57 @@ parse:
 
 	switch {
 	case M < 1 || M > 12: // Month 1-12
-		return time.Time{}, &RangeError{
+		return Time{}, &RangeError{
 			Value:   string(inp),
 			Element: "month",
-			Given:   int(M),
+			Given:   M,
 			Min:     1,
 			Max:     12,
 		}
-	case d < 1 || int(d) > daysIn(time.Month(M), int(Y)): // Day 1-daysIn(month, year)
-		return time.Time{}, &RangeError{
+	case d < 1 || d > daysIn(time.Month(M), Y): // Day 1-daysIn(month, year)
+		return Time{}, &RangeError{
 			Value:   string(inp),
 			Element: "day",
-			Given:   int(d),
+			Given:   d,
 			Min:     1,
-			Max:     daysIn(time.Month(M), int(Y)),
+			Max:     daysIn(time.Month(M), Y),
 		}
 	case h > 23: // Hour 0-23
-		return time.Time{}, &RangeError{
+		return Time{}, &RangeError{
 			Value:   string(inp),
 			Element: "hour",
-			Given:   int(h),
+			Given:   h,
 			Min:     0,
 			Max:     23,
 		}
 	case m > 59: // Minute 0-59
-		return time.Time{}, &RangeError{
+		return Time{}, &RangeError{
 			Value:   string(inp),
 			Element: "minute",
-			Given:   int(m),
+			Given:   m,
 			Min:     0,
 			Max:     59,
 		}
 	case s > 59: // Second 0-59
-		return time.Time{}, &RangeError{
+		return Time{}, &RangeError{
 			Value:   string(inp),
 			Element: "second",
-			Given:   int(s),
+			Given:   s,
 			Min:     0,
 			Max:     59,
 		}
 	}
 
-	return time.Date(int(Y), time.Month(M), int(d), int(h), int(m), int(s), fraction, loc), nil
+	return Date(Y, time.Month(M), d, h, m, s, fraction, loc), nil
 }
 
 // ParseString parses an ISO8601 compliant date-time string into a time.Time object.
-func ParseString(inp string) (time.Time, error) {
+func ParseString(inp string) (Time, error) {
 	return Parse([]byte(inp))
+}
+
+// String renders the time in ISO-8601 format (using RFC3339Nano).
+func (t Time) String() string {
+	// time.RFC3339Nano is one of several permitted ISO-8601 formats.
+	return t.Format(RFC3339Nano)
 }

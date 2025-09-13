@@ -6,15 +6,18 @@ import (
 )
 
 var (
-	// ErrZoneCharacters indicates an incorrect amount of characters was passed to ParseISOZone.
-	ErrZoneCharacters = errors.New("iso8601: Expected between 3 and 6 characters for zone information")
+	// ErrZoneTooShort indicates too few characters were passed to ParseISOZone.
+	ErrZoneTooShort = errors.New("iso8601: Zone information is too short")
+
+	// ErrZoneTooLong indicates too many characters were passed to ParseISOZone.
+	ErrZoneTooLong = errors.New("iso8601: Zone information is too long")
 
 	// ErrInvalidZone indicates an invalid timezone per the standard that doesn't violate any specific
 	// character parsing rules.
 	ErrInvalidZone = errors.New("iso8601: Specified zone is invalid")
 
 	// ErrRemainingData indicates that there is extra data after a `Z` character.
-	ErrRemainingData = errors.New("iso8601: Unexepected remaining data after `Z`")
+	ErrRemainingData = errors.New("iso8601: Unexpected remaining data after `Z`")
 
 	// ErrNotString indicates that a non string type was passed to the UnmarshalJSON method of `Time`.
 	ErrNotString = errors.New("iso8601: Invalid json type (expected string)")
@@ -24,13 +27,13 @@ var (
 	ErrPrecision = errors.New("iso8601: Too many characters in fraction of second precision")
 )
 
-func newUnexpectedCharacterError(c byte) error {
+func newUnexpectedCharacterError(c rune) error {
 	return &UnexpectedCharacterError{Character: c}
 }
 
 // UnexpectedCharacterError indicates the parser scanned a character that was not expected at that time.
 type UnexpectedCharacterError struct {
-	Character byte
+	Character rune
 }
 
 func (e *UnexpectedCharacterError) Error() string {
