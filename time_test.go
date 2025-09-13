@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/rickb777/expect"
 )
 
 type TestAPIResponse struct {
@@ -60,37 +62,19 @@ func TestTime_Unmarshaling(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if y := tn.Year(); y != ShortTest.Year {
-			t.Errorf("Year = %d; want %d", y, ShortTest.Year)
-		}
+		expect.Number(tn.Year()).ToBe(t, ShortTest.Year)
+		expect.Number(tn.Month()).ToBe(t, ShortTest.Month)
+		expect.Number(tn.Day()).ToBe(t, ShortTest.Day)
 
-		if m := int(tn.Month()); m != ShortTest.Month {
-			t.Errorf("Month = %d; want %d", m, ShortTest.Month)
-		}
-
-		if d := tn.Day(); d != ShortTest.Day {
-			t.Errorf("Day = %d; want %d", d, ShortTest.Day)
-		}
-
-		err := tn.UnmarshalJSON([]byte(`2001-11-13`))
-		if err != ErrNotString {
-			t.Fatal(err)
-		}
-		if err == nil {
-			t.Fatal("Expected an error from unmarshal")
-		}
+		expect.Any(tn.UnmarshalJSON([]byte(`2001-11-13`))).ToBe(t, ErrNotString)
 	})
 
 	t.Run("struct", func(t *testing.T) {
 		resp := new(TestAPIResponse)
-		if err := json.Unmarshal(StructTestData, resp); err != nil {
-			t.Fatal(err)
-		}
+		expect.Error(json.Unmarshal(StructTestData, resp)).Not().ToHaveOccurred(t)
 
 		stdlibResp := new(TestStdLibAPIResponse)
-		if err := json.Unmarshal(StructTestData, stdlibResp); err != nil {
-			t.Fatal(err)
-		}
+		expect.Error(json.Unmarshal(StructTestData, stdlibResp)).Not().ToHaveOccurred(t)
 
 		t.Run("stblib parity", func(t *testing.T) {
 			if !resp.Ptr.Time.Equal(*stdlibResp.Ptr) || !resp.Nptr.Time.Equal(stdlibResp.Nptr) {
@@ -99,63 +83,40 @@ func TestTime_Unmarshaling(t *testing.T) {
 		})
 
 		t.Run("ptr", func(t *testing.T) {
-			if y := resp.Ptr.Year(); y != StructTest.Year {
-				t.Errorf("Ptr: Year = %d; want %d", y, StructTest.Year)
-			}
-			if d := resp.Ptr.Day(); d != StructTest.Day {
-				t.Errorf("Ptr: Day = %d; want %d", d, StructTest.Day)
-			}
-			if s := resp.Ptr.Second(); s != StructTest.Second {
-				t.Errorf("Ptr: Second = %d; want %d", s, StructTest.Second)
-			}
+			expect.Number(resp.Ptr.Year()).ToBe(t, StructTest.Year)
+			expect.Number(resp.Ptr.Day()).ToBe(t, StructTest.Day)
+			expect.Number(resp.Ptr.Second()).ToBe(t, StructTest.Second)
 		})
 
 		t.Run("noptr", func(t *testing.T) {
-			if y := resp.Nptr.Year(); y != StructTest.Year {
-				t.Errorf("NoPtr: Year = %d; want %d", y, StructTest.Year)
-			}
-			if d := resp.Nptr.Day(); d != StructTest.Day {
-				t.Errorf("NoPtr: Day = %d; want %d", d, StructTest.Day)
-			}
-			if s := resp.Nptr.Second(); s != StructTest.Second {
-				t.Errorf("NoPtr: Second = %d; want %d", s, StructTest.Second)
-			}
+			expect.Number(resp.Nptr.Year()).ToBe(t, StructTest.Year)
+			expect.Number(resp.Nptr.Day()).ToBe(t, StructTest.Day)
+			expect.Number(resp.Nptr.Second()).ToBe(t, StructTest.Second)
 		})
 	})
 
 	t.Run("null", func(t *testing.T) {
 		resp := new(TestAPIResponse)
-		if err := json.Unmarshal(NullTestData, resp); err != nil {
-			t.Fatal(err)
-		}
+		expect.Error(json.Unmarshal(NullTestData, resp)).Not().ToHaveOccurred(t)
 	})
 
 	t.Run("time zeroed", func(t *testing.T) {
 		resp := new(TestAPIResponse)
-		if err := json.Unmarshal(ZeroedTestData, resp); err != nil {
-			t.Fatal(err)
-		}
+		expect.Error(json.Unmarshal(ZeroedTestData, resp)).Not().ToHaveOccurred(t)
 	})
 
 	t.Run("reparse", func(t *testing.T) {
 		s := time.Now().UTC()
 		data := []byte(s.Format(time.RFC3339Nano))
 		n, err := Parse(data)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !s.Equal(n) {
-			t.Fatalf("Parsing a JSON date mismatch; wanted %s; got %s", s, n)
-		}
+		expect.Error(err).Not().ToHaveOccurred(t)
+		expect.Any(s).ToBe(t, n)
 	})
 
 	t.Run("string", func(t *testing.T) {
 		t1 := time.Now().UTC()
 		s := Time{Time: t1}.String()
-		expected := t1.Format(time.RFC3339Nano)
-		if s != expected {
-			t.Fatalf("String; wanted %s; got %s", expected, s)
-		}
+		expect.String(s).ToBe(t, t1.Format(time.RFC3339Nano))
 	})
 }
 
@@ -194,25 +155,12 @@ func TestTime_Marshaling(t *testing.T) {
 			MarshalTextFormat = c.format
 
 			b, err := xml.Marshal(t9)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			expectedXML := fmt.Sprintf("<Time>%s</Time>", c.expected)
-			if string(b) != expectedXML {
-				t.Fatalf("wanted %s; got %s", expectedXML, string(b))
-			}
+			expect.String(b, err).ToEqual(t, fmt.Sprintf("<Time>%s</Time>", c.expected))
 
 			tn := Time{}
-			if err := xml.Unmarshal(b, &tn); err != nil {
-				t.Fatal(err)
-			}
+			err = xml.Unmarshal(b, &tn)
 
-			expectedTime := t9.Truncate(c.resolution)
-
-			if !tn.Time.Equal(expectedTime.Time) {
-				t.Fatalf("wanted %s; got %s", expectedTime.Time, tn)
-			}
+			expect.Any(tn, err).ToBe(t, t9.Truncate(c.resolution))
 		}
 	})
 
@@ -221,46 +169,27 @@ func TestTime_Marshaling(t *testing.T) {
 			MarshalTextFormat = c.format
 
 			b, err := json.Marshal(t9)
-			if err != nil {
-				t.Fatal(err)
-			}
+			expect.String(b, err).ToEqual(t, fmt.Sprintf("%q", c.expected))
 
-			expectedJSON := fmt.Sprintf("%q", c.expected)
-			if string(b) != expectedJSON {
-				t.Fatalf("wanted %s; got %s", expectedJSON, string(b))
-			}
+			var tn Time
+			err = tn.UnmarshalJSON(b)
 
-			tn := new(Time)
-			if err := tn.UnmarshalJSON(b); err != nil {
-				t.Fatal(err)
-			}
-
-			expectedTime := t9.Truncate(c.resolution)
-
-			if !tn.Time.Equal(expectedTime.Time) {
-				t.Fatalf("wanted %s; got %s", expectedTime.Time, tn)
-			}
+			expect.Any(tn, err).ToBe(t, t9.Truncate(c.resolution))
 		}
 	})
+}
+
+func TestTime_Decorators(t *testing.T) {
+	t9 := Date(2017, 4, 26, 11, 13, 4, 123456789, time.UTC)
 
 	t.Run("Truncate", func(t *testing.T) {
 		tr := t9.Truncate(time.Microsecond)
-
-		expected := t9.Time.Truncate(time.Microsecond)
-
-		if !tr.Time.Equal(expected) {
-			t.Fatalf("wanted %s; got %s", expected, tr)
-		}
+		expect.Any(tr.Time).ToEqual(t, t9.Time.Truncate(time.Microsecond))
 	})
 
 	t.Run("Round", func(t *testing.T) {
 		r := t9.Round(time.Microsecond)
-
-		expected := t9.Time.Round(time.Microsecond)
-
-		if !r.Time.Equal(expected) {
-			t.Fatalf("wanted %s; got %s", expected, r)
-		}
+		expect.Any(r.Time).ToBe(t, t9.Time.Round(time.Microsecond))
 	})
 }
 

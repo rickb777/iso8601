@@ -2,13 +2,16 @@ package iso8601
 
 import (
 	"testing"
+	"time"
+
+	"github.com/rickb777/expect"
 )
 
 type TestCase struct {
 	Using string
 
 	Year  int
-	Month int
+	Month time.Month
 	Day   int
 
 	Hour        int
@@ -308,80 +311,22 @@ var cases = []TestCase{
 func TestParse(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Using, func(t *testing.T) {
-			d, err := Parse([]byte(c.Using))
+			d, err := ParseString(c.Using) // also encompasses testing of Parse([]byte).
 			if c.CheckError(err, t) {
 				return
 			}
 			t.Log(d)
 
-			if y := d.Year(); y != c.Year {
-				t.Errorf("Year = %d; want %d", y, c.Year)
-			}
-			if m := int(d.Month()); m != c.Month {
-				t.Errorf("Month = %d; want %d", m, c.Month)
-			}
-			if d := d.Day(); d != c.Day {
-				t.Errorf("Day = %d; want %d", d, c.Day)
-			}
-			if h := d.Hour(); h != c.Hour {
-				t.Errorf("Hour = %d; want %d", h, c.Hour)
-			}
-			if m := d.Minute(); m != c.Minute {
-				t.Errorf("Minute = %d; want %d", m, c.Minute)
-			}
-			if s := d.Second(); s != c.Second {
-				t.Errorf("Second = %d; want %d", s, c.Second)
-			}
-
-			if ms := d.Nanosecond() / 1000000; ms != c.MilliSecond {
-				t.Errorf("Millisecond = %d; want %d (%d nanoseconds)", ms, c.MilliSecond, d.Nanosecond())
-			}
+			expect.Number(d.Year()).ToBe(t, c.Year)
+			expect.Number((d.Month())).ToBe(t, c.Month)
+			expect.Number(d.Day()).ToBe(t, c.Day)
+			expect.Number(d.Hour()).ToBe(t, c.Hour)
+			expect.Number(d.Minute()).ToBe(t, c.Minute)
+			expect.Number(d.Second()).ToBe(t, c.Second)
+			expect.Number(d.Nanosecond()/1000000).ToBe(t, c.MilliSecond)
 
 			_, z := d.Zone()
-			if offset := float64(z) / 3600; offset != c.Zone {
-				t.Errorf("Zone = %.2f (%d); want %.2f", offset, z, c.Zone)
-			}
-		})
-
-	}
-}
-
-func TestParseString(t *testing.T) {
-	for _, c := range cases {
-		t.Run(c.Using, func(t *testing.T) {
-			d, err := ParseString(c.Using)
-			if c.CheckError(err, t) {
-				return
-			}
-			t.Log(d)
-
-			if y := d.Year(); y != c.Year {
-				t.Errorf("Year = %d; want %d", y, c.Year)
-			}
-			if m := int(d.Month()); m != c.Month {
-				t.Errorf("Month = %d; want %d", m, c.Month)
-			}
-			if d := d.Day(); d != c.Day {
-				t.Errorf("Day = %d; want %d", d, c.Day)
-			}
-			if h := d.Hour(); h != c.Hour {
-				t.Errorf("Hour = %d; want %d", h, c.Hour)
-			}
-			if m := d.Minute(); m != c.Minute {
-				t.Errorf("Minute = %d; want %d", m, c.Minute)
-			}
-			if s := d.Second(); s != c.Second {
-				t.Errorf("Second = %d; want %d", s, c.Second)
-			}
-
-			if ms := d.Nanosecond() / 1000000; ms != c.MilliSecond {
-				t.Errorf("Millisecond = %d; want %d (%d nanoseconds)", ms, c.MilliSecond, d.Nanosecond())
-			}
-
-			_, z := d.Zone()
-			if offset := float64(z) / 3600; offset != c.Zone {
-				t.Errorf("Zone = %.2f (%d); want %.2f", offset, z, c.Zone)
-			}
+			expect.Number(float64(z)/3600).ToBe(t, c.Zone)
 		})
 
 	}
