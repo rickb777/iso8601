@@ -12,10 +12,6 @@ var (
 	// ErrZoneTooLong indicates too many characters were passed to ParseISOZone.
 	ErrZoneTooLong = errors.New("iso8601: Zone information is too long")
 
-	// ErrInvalidZone indicates an invalid timezone per the standard that doesn't violate any specific
-	// character parsing rules.
-	ErrInvalidZone = errors.New("iso8601: Specified zone is invalid")
-
 	// ErrRemainingData indicates that there is extra data after a `Z` character.
 	ErrRemainingData = errors.New("iso8601: Unexpected remaining data after `Z`")
 
@@ -38,6 +34,19 @@ type UnexpectedCharacterError struct {
 
 func (e *UnexpectedCharacterError) Error() string {
 	return fmt.Sprintf("iso8601: Unexpected character `%c`", e.Character)
+}
+
+type SyntaxError struct {
+	Value   string
+	Element string
+	Rune    rune
+}
+
+func (e *SyntaxError) Error() string {
+	if e.Rune == 0 {
+		return fmt.Sprintf("iso8601: Cannot parse %q: invalid %s", e.Value, e.Element)
+	}
+	return fmt.Sprintf("iso8601: Cannot parse %q: invalid %s at '%c'", e.Value, e.Element, e.Rune)
 }
 
 type RangeError struct {

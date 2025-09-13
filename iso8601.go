@@ -53,9 +53,9 @@ func ParseISOZone(inp []byte) (*time.Location, error) {
 		neg = true
 	default:
 		if r == utf8.RuneError {
-			return nil, newUnexpectedCharacterError('?')
+			return nil, &SyntaxError{Value: string(inp), Element: "zone", Rune: rune('?')}
 		}
-		return nil, newUnexpectedCharacterError(r)
+		return nil, &SyntaxError{Value: string(inp), Element: "zone", Rune: r}
 	}
 
 	if len(inp) < 3 {
@@ -85,18 +85,18 @@ func ParseISOZone(inp []byte) (*time.Location, error) {
 			digits++
 		case ':':
 			if i != 2 && i != 5 {
-				return nil, newUnexpectedCharacterError(rune(number[i]))
+				return nil, &SyntaxError{Value: string(inp), Element: "zone", Rune: rune(number[i])}
 			}
 			digits = 0
 		default:
-			return nil, newUnexpectedCharacterError(rune(number[i]))
+			return nil, &SyntaxError{Value: string(inp), Element: "zone", Rune: rune(number[i])}
 		}
 	}
 
 	offset += z * multiplier
 
 	if digits != 2 {
-		return nil, ErrInvalidZone
+		return nil, &SyntaxError{Value: string(inp), Element: "zone"}
 	}
 
 	if neg {
@@ -104,7 +104,7 @@ func ParseISOZone(inp []byte) (*time.Location, error) {
 	}
 
 	if neg && offset == 0 {
-		return nil, ErrInvalidZone
+		return nil, &SyntaxError{Value: string(inp), Element: "zone"}
 	}
 
 	return time.FixedZone(string(inp), offset), nil

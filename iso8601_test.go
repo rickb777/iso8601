@@ -362,13 +362,13 @@ func TestParseISOZone(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		expect.Error(ParseISOZone([]byte("+0"))).ToContain(t, "iso8601: Zone information is too short")
-		expect.Error(ParseISOZone([]byte("1"))).ToContain(t, "iso8601: Unexpected character `1`")
+		expect.Error(ParseISOZone([]byte("1"))).ToContain(t, `iso8601: Cannot parse "1": invalid zone at '1'`)
 		expect.Error(ParseISOZone([]byte("+12345678"))).ToContain(t, "iso8601: Zone information is too long")
-		expect.Error(ParseISOZone([]byte("0100"))).ToContain(t, "iso8601: Unexpected character `0`")
-		expect.Error(ParseISOZone([]byte("-0000"))).ToContain(t, "iso8601: Specified zone is invalid")
-		expect.Error(ParseISOZone([]byte("-0:10"))).ToContain(t, "iso8601: Unexpected character `:`")
-		expect.Error(ParseISOZone([]byte("-01:0"))).ToContain(t, "iso8601: Specified zone is invalid")
-		expect.Error(ParseISOZone([]byte("-foo"))).ToContain(t, "iso8601: Unexpected character `f`")
-		expect.Error(ParseISOZone([]byte{0xAA, 0xBB})).ToContain(t, "iso8601: Unexpected character `?`")
+		expect.Error(ParseISOZone([]byte("0100"))).ToContain(t, `iso8601: Cannot parse "0100": invalid zone at '0'`)
+		expect.Error(ParseISOZone([]byte("-0000"))).ToContain(t, "iso8601: Cannot parse \"-0000\": invalid zone")
+		expect.Error(ParseISOZone([]byte("-0:10"))).ToContain(t, `iso8601: Cannot parse "-0:10": invalid zone at ':'`)
+		expect.Error(ParseISOZone([]byte("-01:0"))).ToContain(t, "iso8601: Cannot parse \"-01:0\": invalid zone")
+		expect.Error(ParseISOZone([]byte("-foo"))).ToContain(t, `iso8601: Cannot parse "-foo": invalid zone at 'f'`)
+		expect.Error(ParseISOZone([]byte{0xAA, 0xBB})).ToContain(t, `iso8601: Cannot parse "\xaa\xbb": invalid zone at '?'`)
 	})
 }
