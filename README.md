@@ -40,7 +40,7 @@ BenchmarkParse-16        	13364954	        77.7 ns/op	       0 B/op	       0 all
 
   - `3.0.0`
 
-  Parse & ParseString now return iso8601.Time, which emulates time.Time but replaces methods that return Time so that
+  Parse & ParseString now return `iso8601.Time`, which encapsulates `time.Time` but replaces methods that return `Time` so that
   it can be a drop-in replacement.
   
   - `2.1.0`
