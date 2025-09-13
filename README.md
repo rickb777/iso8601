@@ -1,10 +1,12 @@
 A fast ISO8601 date parser for Go
 
-[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/rickb777/iso8601) [![GoDoc](https://godoc.org/github.com/rickb777/iso8601?status.svg)](https://godoc.org/github.com/rickb777/iso8601) [![Build Status](https://travis-ci.org/rickb777/iso8601.svg?branch=master)](https://travis-ci.org/rickb777/iso8601) [![Go Report Card](https://goreportcard.com/badge/github.com/rickb777/iso8601)](https://goreportcard.com/report/github.com/rickb777/iso8601)
-
+[![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg)](http://pkg.go.dev/github.com/rickb777/iso8601)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rickb777/iso8601)](https://goreportcard.com/report/github.com/rickb777/iso8601)
+[![Build](https://github.com/rickb777/iso8601/actions/workflows/go.yml/badge.svg)](https://github.com/rickb777/iso8601/actions)
+[![Issues](https://img.shields.io/github/issues/rickb777/iso8601.svg)](https://github.com/rickb777/iso8601/issues)
 
 ```
-go get github.com/rickb777/iso8601/v2
+go get github.com/rickb777/iso8601/v3
 ```
 
 The built-in RFC3333 time layout in Go is too restrictive to support any ISO8601 date-time.
@@ -14,7 +16,7 @@ This library parses any ISO8601 date into a native Go time object without regula
 ## Usage
 
 ```go
-import "github.com/rickb777/iso8601/v2"
+import "github.com/rickb777/iso8601/v3"
 
 // iso8601.Time can be used as a drop-in replacement for time.Time with JSON responses
 type ExternalAPIResponse struct {
@@ -36,6 +38,11 @@ BenchmarkParse-16        	13364954	        77.7 ns/op	       0 B/op	       0 all
 
 ## Release History
 
+  - `3.0.0`
+
+  Parse & ParseString now return iso8601.Time, which emulates time.Time but replaces methods that return Time so that
+  it can be a drop-in replacement.
+  
   - `2.1.0`
 
   Added var MarshalTextFormat to allow reduction in precision of XML and JSON values, where this is needed by legacy systems.
