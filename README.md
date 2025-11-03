@@ -3,6 +3,7 @@ A fast ISO8601 date parser for Go
 [![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg)](http://pkg.go.dev/github.com/rickb777/iso8601)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rickb777/iso8601)](https://goreportcard.com/report/github.com/rickb777/iso8601)
 [![Build](https://github.com/rickb777/iso8601/actions/workflows/go.yml/badge.svg)](https://github.com/rickb777/iso8601/actions)
+[![Coverage](https://coveralls.io/repos/github/rickb777/iso8601/badge.svg?branch=main)](https://coveralls.io/github/rickb777/iso8601?branch=main)
 [![Issues](https://img.shields.io/github/issues/rickb777/iso8601.svg)](https://github.com/rickb777/iso8601/issues)
 
 ```
