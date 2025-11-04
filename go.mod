@@ -1,4 +1,4 @@
-module github.com/rickb777/iso8601/v2
+module github.com/rickb777/iso8601/v3
 
 go 1.24.1
 
