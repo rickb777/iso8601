@@ -10,9 +10,9 @@ A fast ISO8601 date parser for Go
 go get github.com/rickb777/iso8601/v3
 ```
 
-The built-in RFC3333 time layout in Go is too restrictive to support any ISO8601 date-time.
+The built-in [RFC-3339](https://pkg.go.dev/time#pkg-constants) time layout in Go is too restrictive to support every allowable ISO-8601 date-time. This is a problem when parsing dates from other systems that might be valid ISO-8601 syntax unknown to the [time.Parse] built-in parser.
 
-This library parses any ISO8601 date into a native Go time object without regular expressions.
+This library parses any ISO-8601 date into a native Go time object. It is fast and operates without needing regular expressions.
 
 ## Usage
 
