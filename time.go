@@ -212,3 +212,9 @@ func (t Time) ZoneBounds() (start, end Time) {
 	s, e := t.Time.ZoneBounds()
 	return Of(s), Of(e)
 }
+
+// Now is a pluggable function to lookup the system clock. The returned time is in the Local timezone.
+// In unit tests, this can be replaced with a generator function.
+var Now = func() Time {
+	return Time{time.Now()}
+}
