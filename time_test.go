@@ -183,6 +183,7 @@ func TestTime_Decorators(t *testing.T) {
 	ny, err := time.LoadLocation("America/New_York")
 	expect.Error(err).ToBeNil(t)
 
+	t0 := Time{}
 	t9 := Date(2017, 4, 26, 11, 13, 4, 123456789, ny)
 
 	t.Run("Unix", func(t *testing.T) {
@@ -242,6 +243,34 @@ func TestTime_Decorators(t *testing.T) {
 		expect.Any(r.Time).ToBe(t, t9.Time.AddDate(1, 2, 3))
 	})
 
+	t.Run("IsZero", func(t *testing.T) {
+		expect.Bool(t9.IsZero()).ToBeFalse(t)
+		expect.Bool(Time{}.IsZero()).ToBeTrue(t)
+	})
+
+	t.Run("After", func(t *testing.T) {
+		expect.Bool(t9.After(t0)).ToBeTrue(t)
+		expect.Bool(t0.After(t9)).ToBeFalse(t)
+		expect.Bool(t9.After(t9)).ToBeFalse(t)
+	})
+
+	t.Run("Before", func(t *testing.T) {
+		expect.Bool(t9.Before(t9)).ToBeFalse(t)
+		expect.Bool(t9.Before(t0)).ToBeFalse(t)
+		expect.Bool(t0.Before(t9)).ToBeTrue(t)
+	})
+
+	t.Run("Equal", func(t *testing.T) {
+		expect.Bool(t9.Equal(t9)).ToBeTrue(t)
+		expect.Bool(t9.Equal(t0)).ToBeFalse(t)
+		expect.Bool(t0.Equal(t9)).ToBeFalse(t)
+	})
+
+	t.Run("Compare", func(t *testing.T) {
+		expect.Number(t9.Compare(t9)).ToBe(t, 0)
+		expect.Number(t9.Compare(t0)).ToBe(t, 1)
+		expect.Number(t0.Compare(t9)).ToBe(t, -1)
+	})
 }
 
 func BenchmarkCheckNull(b *testing.B) {

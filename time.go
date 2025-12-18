@@ -60,6 +60,37 @@ type Time struct {
 	time.Time
 }
 
+// IsZero reports whether t represents the zero time instant,
+// January 1, year 1, 00:00:00 UTC.
+func (t Time) IsZero() bool {
+	return t.Time.IsZero()
+}
+
+// After reports whether the time instant t is after u.
+func (t Time) After(u Time) bool {
+	return t.Time.After(u.Time)
+}
+
+// Before reports whether the time instant t is before u.
+func (t Time) Before(u Time) bool {
+	return t.Time.Before(u.Time)
+}
+
+// Compare compares the time instant t with u. If t is before u, it returns -1;
+// if t is after u, it returns +1; if they're the same, it returns 0.
+func (t Time) Compare(u Time) int {
+	return t.Time.Compare(u.Time)
+}
+
+// Equal reports whether t and u represent the same time instant.
+// Two times can be equal even if they are in different locations.
+// For example, 6:00 +0200 and 4:00 UTC are Equal.
+// See the documentation on the Time type for the pitfalls of using == with
+// Time values; most code should use Equal instead.
+func (t Time) Equal(u Time) bool {
+	return t.Time.Equal(u.Time)
+}
+
 // Truncate returns the result of rounding t down to a multiple of d (since the zero time).
 // If d <= 0, Truncate returns t stripped of any monotonic clock reading but otherwise unchanged.
 //
